@@ -127,7 +127,7 @@ export class WattBox {
     private readonly config: WattBoxConfig,
   ) {
     this.cache = caching('memory', {
-      ttl: 0, // No default ttl
+      ttl: Number.MAX_SAFE_INTEGER, // No default ttl
       max: 0, // Infinite capacity
     });
   }
@@ -247,39 +247,43 @@ export class WattBox {
     return outletInfo;
   }
 
-  async commandOutlet(outletId: string, command: WattBoxOutletAction): Promise<void> {
+  async commandOutlet(
+    outletId: string,
+    command: WattBoxOutletAction,
+    fireAndForget: boolean = false,
+  ): Promise<void> {
     return this.lock.acquire(WattBox.OUTLET_STATUS_LOCK, async () => {
-      await this.xmlRequest({
-        method: 'get',
-        path: '/control.cgi',
-        params: {
-          outlet: outletId,
-          command,
+      await this.xmlRequest(
+        {
+          method: 'get',
+          path: '/control.cgi',
+          params: {
+            outlet: outletId,
+            command,
+          },
         },
-      });
+        fireAndForget,
+      );
       await (await this.cache).del(WattBox.OUTLET_STATUS_CACHE_KEY);
     });
   }
 
-  private async xmlRequest<T extends xml2js.convertableToString = never>(config: {
-    method:
-      | 'DELETE'
-      | 'delete'
-      | 'GET'
-      | 'get'
-      | 'HEAD'
-      | 'head'
-      | 'PATCH'
-      | 'patch'
-      | 'POST'
-      | 'post'
-      | 'PUT'
-      | 'put'
-      | 'OPTIONS'
-      | 'options';
-    path: string;
-    params?: ParsedUrlQueryInput;
-  }): Promise<T> {
+  private async xmlRequest(config: XmlRequest, fireAndForget: true): Promise<null>;
+
+  private async xmlRequest<T extends xml2js.convertableToString>(
+    config: XmlRequest,
+    fireAndForget?: false,
+  ): Promise<T>;
+
+  private async xmlRequest<T extends xml2js.convertableToString>(
+    config: XmlRequest,
+    fireAndForget?: boolean,
+  ): Promise<T | null>;
+
+  private async xmlRequest<T extends xml2js.convertableToString>(
+    config: XmlRequest,
+    fireAndForget?: boolean,
+  ): Promise<T | null> {
     return new Promise((resolve, reject) => {
       const { host, port } = new URL(this.config.address);
       const qs = config.params ? `?${querystring.stringify(config.params)}` : '';
@@ -296,9 +300,15 @@ export class WattBox {
               '\r\n',
           );
           socket.end();
+          if (fireAndForget) {
+            socket.destroy();
+            resolve(null);
+          }
         },
       );
-
+      if (fireAndForget) {
+        return;
+      }
       let data = Buffer.of();
       socket.on('error', (error) => {
         reject(error);
@@ -414,6 +424,26 @@ function parseHttpResponse(input: Buffer) {
     body: Buffer.concat(bodyChunks),
     trailers,
   };
+}
+
+interface XmlRequest {
+  method:
+    | 'DELETE'
+    | 'delete'
+    | 'GET'
+    | 'get'
+    | 'HEAD'
+    | 'head'
+    | 'PATCH'
+    | 'patch'
+    | 'POST'
+    | 'post'
+    | 'PUT'
+    | 'put'
+    | 'OPTIONS'
+    | 'options';
+  path: string;
+  params?: ParsedUrlQueryInput;
 }
 
 interface WattBoxInfoResponse {
