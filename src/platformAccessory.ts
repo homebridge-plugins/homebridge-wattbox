@@ -1,7 +1,13 @@
 import { CharacteristicValue, HAP, Logger, PlatformAccessory } from 'homebridge';
 
 import { WattBoxHomebridgePlatform } from './platform';
-import { WattBox, WattBoxOutlet, WattBoxOutletAction, WattBoxOutletStatus } from './wattbox';
+import {
+  WattBox,
+  WattBoxOutlet,
+  WattBoxOutletAction,
+  WattBoxOutletMode,
+  WattBoxOutletStatus,
+} from './wattbox';
 
 export type WattBoxOutletOptionalState = Pick<WattBoxOutlet, 'name' | 'id'> &
   Partial<WattBoxOutlet>;
@@ -63,10 +69,19 @@ export class WattBoxOutletPlatformAccessory {
   private async setOn(value: CharacteristicValue): Promise<void> {
     this.log.debug('[%s] Set Characteristic On ->', this.outletName, value);
     try {
-      await this.wattbox.commandOutlet(
-        this.outletId,
-        value ? WattBoxOutletAction.ON : WattBoxOutletAction.OFF,
-      );
+      let action: WattBoxOutletAction;
+      let fireAndForget = false;
+      if (value) {
+        action = WattBoxOutletAction.ON;
+      } else if (this.outlet.mode === WattBoxOutletMode.RESET_ONLY) {
+        action = WattBoxOutletAction.POWER_RESET;
+        // The reset command takes a while to respond and doesn't return a valid HTTP response so
+        // just fire and forget it.
+        fireAndForget = true;
+      } else {
+        action = WattBoxOutletAction.OFF;
+      }
+      await this.wattbox.commandOutlet(this.outletId, action, fireAndForget);
     } catch (error: unknown) {
       this.log.error(
         '[%s] An error occurred setting Characteristic On; %s',

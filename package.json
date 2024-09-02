@@ -13,7 +13,7 @@
   },
   "engines": {
     "node": "^18 || ^20",
-    "homebridge": "^1.6.0"
+    "homebridge": ">=1.6.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -34,24 +34,24 @@
   ],
   "dependencies": {
     "async-lock": "^1.4.1",
-    "cache-manager": "^5.4.0",
+    "cache-manager": "^5.7.6",
     "http-parser-js": "^0.5.8",
     "pubsub-js": "^1.9.4",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/async-lock": "^1.4.2",
-    "@types/node": "^20.11.20",
+    "@types/node": "^22.5.1",
     "@types/pubsub-js": "^1.8.6",
     "@types/xml2js": "^0.4.14",
-    "@typescript-eslint/eslint-plugin": "6.10.0",
-    "@typescript-eslint/parser": "6.10.0",
-    "eslint": "^8.56.0",
-    "homebridge": "^1.7.0",
-    "homebridge-config-ui-x": "^4.55.1",
-    "nodemon": "^3.1.0",
-    "prettier": "^3.2.5",
+    "@typescript-eslint/eslint-plugin": "^7.17.0",
+    "@typescript-eslint/parser": "^7.17.0",
+    "eslint": "8.57.0",
+    "homebridge": "^2.0.0-beta.13",
+    "homebridge-config-ui-x": "^4.57.1",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.5.4"
   }
 }
