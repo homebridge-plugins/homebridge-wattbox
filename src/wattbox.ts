@@ -2,12 +2,13 @@ import xml2js from 'xml2js';
 import PubSub from 'pubsub-js';
 import { Logger } from 'homebridge';
 
-import { Cache, caching } from 'cache-manager';
+import { Cache, createCache } from 'cache-manager';
 import net from 'net';
 import querystring, { ParsedUrlQueryInput } from 'querystring';
 import AsyncLock from 'async-lock';
 import Token = PubSubJS.Token;
 import { HTTPParser } from 'http-parser-js';
+import { Keyv, KeyvCacheableMemory } from 'cacheable';
 
 export interface WattBoxStatus {
   information: WattBoxInformation;
@@ -120,16 +121,18 @@ export class WattBox {
   private static readonly OUTLET_STATUS_LOCK = 'OUTLET_STATUS';
 
   private readonly lock = new AsyncLock();
-  private readonly cache: Promise<Cache>;
+  private readonly cache: Cache;
 
   constructor(
     public readonly log: Logger,
     private readonly config: WattBoxConfig,
   ) {
-    this.cache = caching('memory', {
-      ttl: Number.MAX_SAFE_INTEGER, // No default ttl
-      max: 0, // Infinite capacity
+    const store = new KeyvCacheableMemory({
+      ttl: undefined, // No default ttl
+      lruSize: 0, // Infinite capacity
     });
+    const keyv = new Keyv({ store });
+    this.cache = createCache({ stores: [keyv] });
   }
 
   subscribe(outletId: string, func: (outlet: WattBoxOutlet) => void): Token {
@@ -178,7 +181,7 @@ export class WattBox {
     return this.lock.acquire(
       WattBox.OUTLET_STATUS_LOCK,
       async (): Promise<WattBoxStatus> =>
-        (await this.cache).wrap(
+        this.cache.wrap(
           WattBox.OUTLET_STATUS_CACHE_KEY,
           async (): Promise<WattBoxStatus> => {
             this.log.debug('[API] Fetching status from WattBox API');
@@ -264,7 +267,7 @@ export class WattBox {
         },
         fireAndForget,
       );
-      await (await this.cache).del(WattBox.OUTLET_STATUS_CACHE_KEY);
+      await this.cache.del(WattBox.OUTLET_STATUS_CACHE_KEY);
     });
   }
 

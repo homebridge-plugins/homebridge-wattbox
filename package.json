@@ -12,8 +12,8 @@
     "url": "https://github.com/derek-miller/homebridge-wattbox/issues"
   },
   "engines": {
-    "node": "^18 || ^20",
-    "homebridge": ">=1.6.0"
+    "node": "^18 || ^20|| ^22",
+    "homebridge": "^1.6.0 || ^2.0.0-beta.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -34,24 +34,27 @@
   ],
   "dependencies": {
     "async-lock": "^1.4.1",
-    "cache-manager": "^5.7.6",
+    "cache-manager": "^6.3.1",
+    "cacheable": "^1.8.6",
+    "keyv": "^5.2.2",
     "http-parser-js": "^0.5.8",
     "pubsub-js": "^1.9.4",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/async-lock": "^1.4.2",
-    "@types/node": "^22.5.1",
+    "@types/cache-manager": "^4.0.6",
+    "@types/node": "^22.10.2",
     "@types/pubsub-js": "^1.8.6",
     "@types/xml2js": "^0.4.14",
-    "@typescript-eslint/eslint-plugin": "^7.17.0",
-    "@typescript-eslint/parser": "^7.17.0",
-    "eslint": "8.57.0",
-    "homebridge": "^2.0.0-beta.13",
-    "homebridge-config-ui-x": "^4.57.1",
-    "nodemon": "^3.1.4",
-    "prettier": "^3.3.3",
+    "@typescript-eslint/eslint-plugin": "<8",
+    "@typescript-eslint/parser": "<8",
+    "eslint": "<9",
+    "homebridge": "^2.0.0-beta.23",
+    "homebridge-config-ui-x": "^4.65.2",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "<5.6.0"
   }
 }
