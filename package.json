@@ -1,19 +1,22 @@
 {
-  "displayName": "Homebridge WattBox Plugin",
-  "name": "homebridge-wattbox",
+  "displayName": "WattBox",
+  "name": "@homebridge-plugins/homebridge-wattbox",
   "version": "3.2.0",
   "description": "WattBox plugin for Homebridge.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/derek-miller/homebridge-wattbox.git"
+    "url": "git://github.com/homebridge-plugins/homebridge-wattbox.git"
   },
   "bugs": {
-    "url": "https://github.com/derek-miller/homebridge-wattbox/issues"
+    "url": "https://github.com/homebridge-plugins/homebridge-wattbox/issues"
   },
   "engines": {
-    "node": "^18 || ^20|| ^22",
-    "homebridge": "^1.6.0 || ^2.0.0-beta.0"
+    "homebridge": "^1.8.5 || ^2.0.0 || ^2.0.0-beta.23 || ^2.0.0-alpha.37",
+    "node": "^20 || ^22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -26,7 +29,8 @@
     "fmt": "npm run lint-fix",
     "watch": "npm run build && npm link && nodemon",
     "build": "rm -rf ./dist && tsc",
-    "prepublishOnly": "npm run lint && npm run build"
+    "prepublishOnly": "npm run lint && npm run build",
+    "test": "npm run eslint"
   },
   "keywords": [
     "homebridge-plugin",
@@ -55,6 +59,8 @@
     "nodemon": "^3.1.9",
     "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
+    "jest": "^29.7.0",
+    "@types/mocha": "^10.0.10",
     "typescript": "<5.6.0"
   }
 }
