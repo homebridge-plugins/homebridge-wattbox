@@ -1,7 +1,7 @@
 {
   "displayName": "WattBox",
   "name": "@homebridge-plugins/homebridge-wattbox",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "WattBox plugin for Homebridge.",
   "license": "Apache-2.0",
   "repository": {
