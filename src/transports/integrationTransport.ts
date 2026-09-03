@@ -58,6 +58,15 @@ export function integrationAction(command: WattBoxOutletAction): string | undefi
   return INTEGRATION_ACTION[command];
 }
 
+// The reply echoes the command: '?Model' -> '?Model=<data>', and an argument-bearing query
+// '?OutletPowerStatus=2' -> '?OutletPowerStatus=2,<data>'. Matching on this full prefix (argument
+// included) stops a late/stale reply for one argument from resolving an in-flight query for
+// another (e.g. a timed-out outlet 1 reply satisfying the outlet 2 query).
+export function replyPrefixFor(command: string): string {
+  const eq = command.indexOf('=');
+  return eq === -1 ? `${command}=` : `${command},`;
+}
+
 export interface UnitPower {
   currentAmps: number;
   powerWatts: number;
@@ -371,9 +380,14 @@ export class IntegrationTransport implements WattBoxTransport {
 
   private async query(command: string): Promise<string> {
     await this.ensureConnected();
-    const prefix = `${command.split('=')[0]}=`;
-    const line = await this.send(command, { kind: 'prefix', value: prefix });
-    return line.slice(prefix.length);
+    // Correlate on the full echoed prefix (argument included) so a stale reply for a different
+    // argument cannot resolve this query...
+    const replyPrefix = replyPrefixFor(command);
+    const line = await this.send(command, { kind: 'prefix', value: replyPrefix });
+    // ...but return the payload after the base '?Cmd=' so any echoed argument stays in the value
+    // (e.g. '?OutletPowerStatus=2,18.5,..' -> '2,18.5,..' for parseOutletPowerStatus).
+    const base = command.split('=')[0];
+    return line.slice(base.length + 1);
   }
 
   private send(line: string, matcher: ReplyMatcher): Promise<string> {

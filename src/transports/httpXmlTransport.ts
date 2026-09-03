@@ -4,7 +4,7 @@ import querystring, { ParsedUrlQueryInput } from 'querystring';
 import { HTTPParser } from 'http-parser-js';
 import { Logger } from 'homebridge';
 
-import { WattBoxTransport } from './transport';
+import { resolveHostPort, WattBoxTransport } from './transport';
 import { WattBoxConfig, WattBoxOutletAction, WattBoxStatus } from './types';
 
 // Legacy transport for WattBox devices exposing the HTTP/XML API (wattbox_info.xml / control.cgi)
@@ -109,12 +109,14 @@ export class HttpXmlTransport implements WattBoxTransport {
     fireAndForget?: boolean,
   ): Promise<T | null> {
     return new Promise((resolve, reject) => {
-      const { host, port } = new URL(this.config.address);
+      // Accept a bare host, host:port, or URL (the schema default and the Integration docs use a
+      // bare host, which new URL() would reject).
+      const { host, port } = resolveHostPort(this.config.address, 80);
       const qs = config.params ? `?${querystring.stringify(config.params)}` : '';
       const socket = net.createConnection(
         {
           host,
-          port: parseInt(port || '80'),
+          port,
         },
         () => {
           socket.write(

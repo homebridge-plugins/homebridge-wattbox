@@ -6,6 +6,7 @@ import {
   parseOutletStatuses,
   parsePowerStatus,
   parseUpsStatus,
+  replyPrefixFor,
 } from './integrationTransport';
 import { resolveHostPort } from './transport';
 import { WattBoxOutletAction, WattBoxOutletStatus, WattBoxSafeVoltageStatus } from './types';
@@ -57,6 +58,16 @@ describe('integration protocol parsing', () => {
       currentAmps: 0.07,
       voltageVolts: 122.18,
     });
+  });
+
+  it('builds an argument-aware reply prefix so per-argument queries stay distinct', () => {
+    // Plain query: reply is '?Model=<data>'.
+    expect(replyPrefixFor('?Model')).toBe('?Model=');
+    expect(replyPrefixFor('?OutletStatus')).toBe('?OutletStatus=');
+    // Argument-bearing query: reply is '?OutletPowerStatus=2,<data>'. The argument must be part of
+    // the match prefix so a stale '?OutletPowerStatus=1,..' cannot resolve the outlet 2 query.
+    expect(replyPrefixFor('?OutletPowerStatus=2')).toBe('?OutletPowerStatus=2,');
+    expect(replyPrefixFor('?OutletPowerStatus=1')).not.toBe(replyPrefixFor('?OutletPowerStatus=2'));
   });
 
   it('parses UPS status', () => {
