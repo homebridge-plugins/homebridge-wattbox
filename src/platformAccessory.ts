@@ -1,4 +1,4 @@
-import { CharacteristicValue, HAP, Logger, PlatformAccessory } from 'homebridge';
+import { CharacteristicValue, HAP, Logger, PlatformAccessory, Service } from 'homebridge';
 
 import { WattBoxHomebridgePlatform } from './platform';
 import {
@@ -17,11 +17,15 @@ export interface WattBoxOutletPlatformAccessoryContext {
   serialNumber: string;
 }
 
+// An outlet is considered "in use" once it draws more than this many watts.
+const OUTLET_IN_USE_THRESHOLD_WATTS = 0.5;
+
 export class WattBoxOutletPlatformAccessory {
   private readonly log: Logger;
   private readonly hap: HAP;
   private readonly wattbox: WattBox;
   private readonly context: WattBoxOutletPlatformAccessoryContext;
+  private readonly service: Service;
   private readonly outletId: string;
   private readonly outletName: string;
   private readonly serialNumber: string;
@@ -43,16 +47,32 @@ export class WattBoxOutletPlatformAccessory {
     this.outletName = this.outlet.name;
     this.id = `${this.serialNumber}:${this.outletId}`;
 
-    const statusCharacteristic = (this.accessory.getServiceById(
-      this.platform.Service.Outlet,
-      this.id,
-    ) || this.accessory.addService(this.platform.Service.Outlet, this.outletName, this.id))!
-      .setCharacteristic(this.platform.Characteristic.Name, this.outletName)
+    this.service =
+      this.accessory.getServiceById(this.platform.Service.Outlet, this.id) ||
+      this.accessory.addService(this.platform.Service.Outlet, this.outletName, this.id);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.outletName);
+
+    const statusCharacteristic = this.service
       .getCharacteristic(this.platform.Characteristic.On)
       .onSet(this.setOn.bind(this))
       .onGet(this.getOn.bind(this));
 
-    this.wattbox.subscribe(this.outletId, ({ status }) => {
+    // Add Eve power-metering characteristics when the transport provides per-outlet metering.
+    if (this.outlet.powerWatts !== undefined) {
+      for (const ctor of [
+        this.platform.eve.CurrentConsumption,
+        this.platform.eve.Voltage,
+        this.platform.eve.ElectricCurrent,
+      ]) {
+        if (!this.service.testCharacteristic(ctor)) {
+          this.service.addCharacteristic(ctor);
+        }
+      }
+      this.updateMetering(this.outlet);
+    }
+
+    this.wattbox.subscribe(this.outletId, (outlet) => {
+      const { status } = outlet;
       if (this.status !== status) {
         this.log.debug(
           '[%s] Received outlet subscription status update: %s -> %s',
@@ -63,7 +83,26 @@ export class WattBoxOutletPlatformAccessory {
         this.status = status;
         statusCharacteristic.updateValue(!!status);
       }
+      this.updateMetering(outlet);
     });
+  }
+
+  // Update the native OutletInUse flag and, when metered, the Eve consumption characteristics.
+  private updateMetering(outlet: WattBoxOutletOptionalState): void {
+    const inUse =
+      outlet.powerWatts !== undefined
+        ? outlet.powerWatts > OUTLET_IN_USE_THRESHOLD_WATTS
+        : outlet.status === WattBoxOutletStatus.ON;
+    this.service.updateCharacteristic(this.platform.Characteristic.OutletInUse, inUse);
+    if (outlet.powerWatts !== undefined) {
+      this.service.updateCharacteristic(this.platform.eve.CurrentConsumption, outlet.powerWatts);
+    }
+    if (outlet.currentAmps !== undefined) {
+      this.service.updateCharacteristic(this.platform.eve.ElectricCurrent, outlet.currentAmps);
+    }
+    if (outlet.voltageVolts !== undefined) {
+      this.service.updateCharacteristic(this.platform.eve.Voltage, outlet.voltageVolts);
+    }
   }
 
   private async setOn(value: CharacteristicValue): Promise<void> {
