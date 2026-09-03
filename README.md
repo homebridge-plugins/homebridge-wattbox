@@ -14,6 +14,26 @@ for [Homebridge](https://github.com/homebridge/homebridge).
 - WB-300VB
 - WB-700
 - WB-700CH
+- WB-800 series (via the Integration Protocol, see below)
+
+## Transports
+
+WattBox devices expose one of two control interfaces depending on firmware:
+
+- **Integration Protocol** — a line-based TCP interface (default port `23`) used by
+  current OvrC firmware (e.g. the WB-800 series). This is the recommended interface.
+- **Legacy HTTP/XML API** — `wattbox_info.xml` / `control.cgi` over HTTP, used by older
+  firmware.
+
+The `transport` option selects which to use:
+
+- `auto` (default) — probe the Integration Protocol first, then fall back to the HTTP API.
+- `integration` — force the Integration Protocol.
+- `http` — force the legacy HTTP/XML API.
+
+For the Integration Protocol, set `address` to a bare host or `host:port`
+(e.g. `192.168.1.100`) and optionally `port` (defaults to `23`). For the HTTP API, set
+`address` to a URL (e.g. `http://192.168.1.100`).
 
 ## Configuration
 
@@ -25,7 +45,8 @@ for [Homebridge](https://github.com/homebridge/homebridge).
     {
       "platform": "WattBox",
       "name": "WattBox",
-      "address": "http://192.168.1.100",
+      "address": "192.168.1.100",
+      "transport": "auto",
       "username": "wattbox",
       "password": "wattbox"
     }

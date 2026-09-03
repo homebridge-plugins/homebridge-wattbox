@@ -15,6 +15,7 @@ import {
   WattBoxOutletPlatformAccessoryContext,
 } from './platformAccessory';
 import { WattBox, WattBoxConfig, WattBoxStatus } from './wattbox';
+import { createEveCharacteristics, EveCharacteristics } from './customCharacteristics';
 
 type WattBoxHomebridgePlatformConfig = PlatformConfig &
   WattBoxConfig & {
@@ -28,6 +29,7 @@ export class WattBoxHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly accessories: PlatformAccessory[] = [];
   public readonly config: WattBoxHomebridgePlatformConfig;
   public readonly wattbox: WattBox;
+  public readonly eve: EveCharacteristics;
 
   constructor(
     public readonly log: Logger,
@@ -36,6 +38,7 @@ export class WattBoxHomebridgePlatform implements DynamicPlatformPlugin {
   ) {
     this.Service = this.api.hap.Service;
     this.Characteristic = this.api.hap.Characteristic;
+    this.eve = createEveCharacteristics(this.api);
     this.config = <WattBoxHomebridgePlatformConfig>this.platformConfig;
     this.wattbox = new WattBox(log, this.config);
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, async () => this.discoverDevices());

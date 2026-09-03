@@ -28,8 +28,8 @@
   ],
   "scripts": {
     "check": "npm install && npm outdated",
-    "eslint": "eslint src/**.ts --max-warnings=0",
-    "eslint-fix": "eslint src/**.ts --max-warnings=0 --fix",
+    "eslint": "eslint src/**/*.ts --max-warnings=0",
+    "eslint-fix": "eslint src/**/*.ts --max-warnings=0 --fix",
     "prettier": "prettier --check src *.{yaml,json,md}",
     "prettier-fix": "prettier --write src *.{yaml,json,md}",
     "lint": "npm run eslint",
